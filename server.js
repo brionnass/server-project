@@ -1,16 +1,23 @@
 const express = require('express');
 const path = require('path');
+const cors = require('cors'); // Import the CORS library
 const Joi = require('joi');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-let products = require('./products'); // Assuming products is an array of objects in a separate products.js file
+// Import product data
+let products = require('./products');
 
-// Middleware
+// Enable CORS for all origins or specify allowed origins if required
+app.use(cors()); // This allows any origin; alternatively, configure as needed
+
+// Middleware for JSON parsing
 app.use(express.json());
+
+// Serve static files for images
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
-// Serve static HTML for API info
+// Serve index.html for API info
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -25,7 +32,7 @@ app.get('/api/products', (req, res) => {
     res.json(products);
 });
 
-// Joi schema for validation
+// Joi schema for product validation
 const productSchema = Joi.object({
     name: Joi.string().required(),
     shortDescription: Joi.string().required(),
@@ -37,22 +44,21 @@ const productSchema = Joi.object({
     mainIngredients: Joi.array().items(Joi.string()).required()
 });
 
-// API endpoint to add a new product
+// POST request to add a new product
 app.post('/api/products', (req, res) => {
     const { error, value } = productSchema.validate(req.body);
-    
     if (error) {
         return res.status(400).json({ message: error.details[0].message });
     }
 
-    // Add new product to the products array
+    // Add the new product to the products array
     const newProduct = { id: products.length + 1, ...value };
     products.push(newProduct);
-    
+
     res.status(201).json({ message: 'Product added successfully!', product: newProduct });
 });
 
-// Start the server
+// Start server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
