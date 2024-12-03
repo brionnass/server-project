@@ -58,6 +58,39 @@ app.post('/api/products', (req, res) => {
     res.status(201).json({ message: 'Product added successfully!', product: newProduct });
 });
 
+// PUT request to edit a product
+app.put('/api/products/:id', (req, res) => {
+    const { id } = req.params;
+    const { error, value } = productSchema.validate(req.body);
+
+    if (error) {
+        return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const productIndex = products.findIndex((p) => p.id === parseInt(id));
+    if (productIndex === -1) {
+        return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Update the product
+    products[productIndex] = { id: parseInt(id), ...value };
+    res.status(200).json({ message: 'Product updated successfully!', product: products[productIndex] });
+});
+
+// DELETE request to remove a product
+app.delete('/api/products/:id', (req, res) => {
+    const { id } = req.params;
+
+    const productIndex = products.findIndex((p) => p.id === parseInt(id));
+    if (productIndex === -1) {
+        return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Remove the product from the array
+    products.splice(productIndex, 1);
+    res.status(200).json({ message: 'Product deleted successfully!' });
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
