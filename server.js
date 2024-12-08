@@ -55,22 +55,28 @@ app.post('/api/products', (req, res) => {
 
 // Edit a product
 app.put('/api/products/:id', (req, res) => {
+    console.log('PUT Request Params:', req.params);
+    console.log('PUT Request Body:', req.body);
+
     const { id } = req.params;
     const { error, value } = productSchema.validate(req.body);
 
     if (error) {
+        console.error('Validation Error:', error.details[0].message);
         return res.status(400).json({ message: error.details[0].message });
     }
 
     const productIndex = products.findIndex((p) => p.id === parseInt(id));
     if (productIndex === -1) {
-        return res.status(404).json({ message: 'Product not found.' });
+        console.error('Product not found:', id);
+        return res.status(404).json({ message: 'Product not found' });
     }
 
     // Update the product
     products[productIndex] = { id: parseInt(id), ...value };
     res.status(200).json({ message: 'Product updated successfully!', product: products[productIndex] });
 });
+
 
 // Delete a product
 app.delete('/api/products/:id', (req, res) => {
