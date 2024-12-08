@@ -1,15 +1,15 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors'); // Import the CORS library
-const Joi = require('joi');
+const Joi = require('joi'); // For validation
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Import product data
 let products = require('./products');
 
-// Enable CORS for all origins or specify allowed origins if required
-app.use(cors()); // This allows any origin; alternatively, configure as needed
+// Enable CORS for all origins
+app.use(cors());
 
 // Middleware for JSON parsing
 app.use(express.json());
@@ -41,7 +41,7 @@ const productSchema = Joi.object({
     price: Joi.string().required(),
     image: Joi.string().uri().required(),
     features: Joi.array().items(Joi.string()).required(),
-    mainIngredients: Joi.array().items(Joi.string()).required()
+    mainIngredients: Joi.array().items(Joi.string()).required(),
 });
 
 // POST request to add a new product
@@ -51,7 +51,6 @@ app.post('/api/products', (req, res) => {
         return res.status(400).json({ message: error.details[0].message });
     }
 
-    // Add the new product to the products array
     const newProduct = { id: products.length + 1, ...value };
     products.push(newProduct);
 
@@ -95,3 +94,4 @@ app.delete('/api/products/:id', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+
