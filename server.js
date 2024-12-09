@@ -115,6 +115,7 @@ app.post('/api/products', upload.single('image'), (req, res) => {
 app.put('/api/products/:id', upload.single('image'), (req, res) => {
     const { id } = req.params;
 
+    // Find the product to edit
     const productIndex = products.findIndex((p) => p.id === parseInt(id));
     if (productIndex === -1) {
         return res.status(404).json({ message: 'Product not found.' });
@@ -122,17 +123,22 @@ app.put('/api/products/:id', upload.single('image'), (req, res) => {
 
     const existingProduct = products[productIndex];
 
+    // Use the existing image if no new file is uploaded
+    const updatedImage = req.file ? `/images/${req.file.filename}` : existingProduct.image;
+
+    // Validate updated data
     const { error, value } = productSchema.validate({
         ...req.body,
         features: JSON.parse(req.body.features),
         mainIngredients: JSON.parse(req.body.mainIngredients),
-        image: req.file ? `/images/${req.file.filename}` : existingProduct.image, // Use uploaded file or keep existing
+        image: updatedImage, // Keep the existing image if no new file
     });
 
     if (error) {
         return res.status(400).json({ message: error.details[0].message });
     }
 
+    // Update the product
     products[productIndex] = { id: parseInt(id), ...value };
 
     res.status(200).json({ message: 'Product updated successfully!', product: products[productIndex] });
