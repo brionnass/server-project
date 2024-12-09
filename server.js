@@ -115,20 +115,22 @@ app.post('/api/products', upload.single('image'), (req, res) => {
 app.put('/api/products/:id', upload.single('image'), (req, res) => {
     const { id } = req.params;
 
+    const productIndex = products.findIndex((p) => p.id === parseInt(id));
+    if (productIndex === -1) {
+        return res.status(404).json({ message: 'Product not found.' });
+    }
+
+    const existingProduct = products[productIndex];
+
     const { error, value } = productSchema.validate({
         ...req.body,
         features: JSON.parse(req.body.features),
         mainIngredients: JSON.parse(req.body.mainIngredients),
-        image: req.file ? `/images/${req.file.filename}` : req.body.image, // Use uploaded file or keep existing
+        image: req.file ? `/images/${req.file.filename}` : existingProduct.image, // Use uploaded file or keep existing
     });
 
     if (error) {
         return res.status(400).json({ message: error.details[0].message });
-    }
-
-    const productIndex = products.findIndex((p) => p.id === parseInt(id));
-    if (productIndex === -1) {
-        return res.status(404).json({ message: 'Product not found.' });
     }
 
     products[productIndex] = { id: parseInt(id), ...value };
