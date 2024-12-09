@@ -1,12 +1,14 @@
 const express = require('express');
 const path = require('path');
-const cors = require('cors'); // Import the CORS library
+const cors = require('cors');
+const multer = require('multer'); // For handling file uploads
 const Joi = require('joi');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Sample in-memory products array
-let products = require('./products'); // Load products from a separate file (or replace with an empty array if starting fresh)
+// Configure multer for file uploads
+const upload = multer({ dest: 'images/' }); // Files will be saved in the "images" directory
 
 // Enable CORS
 app.use(cors());
@@ -29,25 +31,38 @@ const productSchema = Joi.object({
     fullDescription: Joi.string().required(),
     spf: Joi.number().required(),
     price: Joi.string().required(),
-    image: Joi.string().uri().required(),
+    image: Joi.string().required(),
     features: Joi.array().items(Joi.string()).required(),
     mainIngredients: Joi.array().items(Joi.string()).required(),
 });
+
+// In-memory products array
+let products = [];
 
 // Get all products
 app.get('/api/products', (req, res) => {
     res.json(products);
 });
 
-// Add a new product
-app.post('/api/products', (req, res) => {
-    const { error, value } = productSchema.validate(req.body);
+// Add a new product with image upload
+app.post('/api/products', upload.single('image'), (req, res) => {
+    // Validate the incoming product data
+    const { error, value } = productSchema.validate({
+        ...req.body,
+        features: JSON.parse(req.body.features),
+        mainIngredients: JSON.parse(req.body.mainIngredients),
+        image: req.file ? `/images/${req.file.filename}` : undefined,
+    });
 
     if (error) {
         return res.status(400).json({ message: error.details[0].message });
     }
 
-    const newProduct = { id: products.length + 1, ...value };
+    // Create the new product
+    const newProduct = {
+        id: products.length + 1,
+        ...value,
+    };
     products.push(newProduct);
 
     res.status(201).json({ message: 'Product added successfully!', product: newProduct });
