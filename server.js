@@ -1,13 +1,13 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const multer = require('multer');
+const multer = require('multer'); // For handling file uploads
 const Joi = require('joi');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Original products (always reset to these on server restart)
+// Original products (reset to these on restart)
 const originalProducts = [
     {
         id: 1,
@@ -55,6 +55,9 @@ const originalProducts = [
     }
 ];
 
+// In-memory products array (resets to originalProducts on server restart)
+let products = [...originalProducts];
+
 // Configure multer for file uploads
 const upload = multer({ dest: 'images/' });
 
@@ -84,9 +87,6 @@ const productSchema = Joi.object({
     mainIngredients: Joi.array().items(Joi.string()).required(),
 });
 
-// Runtime products array (starts with original products at server start)
-let products = [...originalProducts];
-
 // Get all products
 app.get('/api/products', (req, res) => {
     res.json(products);
@@ -98,7 +98,7 @@ app.post('/api/products', upload.single('image'), (req, res) => {
         ...req.body,
         features: JSON.parse(req.body.features),
         mainIngredients: JSON.parse(req.body.mainIngredients),
-        image: req.file ? `/images/${req.file.filename}` : undefined,
+        image: req.file ? `/images/${req.file.filename}` : undefined, // Save image path
     });
 
     if (error) {
@@ -109,6 +109,31 @@ app.post('/api/products', upload.single('image'), (req, res) => {
     products.push(newProduct);
 
     res.status(201).json({ message: 'Product added successfully!', product: newProduct });
+});
+
+// Edit a product
+app.put('/api/products/:id', upload.single('image'), (req, res) => {
+    const { id } = req.params;
+
+    const { error, value } = productSchema.validate({
+        ...req.body,
+        features: JSON.parse(req.body.features),
+        mainIngredients: JSON.parse(req.body.mainIngredients),
+        image: req.file ? `/images/${req.file.filename}` : req.body.image, // Use uploaded file or keep existing
+    });
+
+    if (error) {
+        return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const productIndex = products.findIndex((p) => p.id === parseInt(id));
+    if (productIndex === -1) {
+        return res.status(404).json({ message: 'Product not found.' });
+    }
+
+    products[productIndex] = { id: parseInt(id), ...value };
+
+    res.status(200).json({ message: 'Product updated successfully!', product: products[productIndex] });
 });
 
 // Delete a product
